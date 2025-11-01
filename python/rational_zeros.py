@@ -324,6 +324,170 @@ def calculate_rational_zeros(leading_coef, constant_term):
     return zeros_list
 
 
+def synthetic_division(coefficients, candidate):
+    """
+    Performs synthetic division to test if a candidate is a zero.
+
+    Process:
+    1. Bring down the first coefficient
+    2. Multiply by candidate, add to next coefficient
+    3. Repeat for all coefficients
+    4. Last value is the remainder (0 means candidate IS a zero!)
+
+    Args:
+        coefficients (list): Polynomial coefficients [aₙ, aₙ₋₁, ..., a₁, a₀]
+        candidate (Fraction): The value to test (can be integer or fraction)
+
+    Returns:
+        tuple: (quotient_coefficients, remainder)
+               - quotient_coefficients: Result after division (degree n-1)
+               - remainder: If 0, candidate is a zero!
+
+    Example:
+        coefficients = [1, -5, 2, 8]
+        candidate = 2
+        Result: quotient = [1, -3, -4], remainder = 0
+        Means: (x - 2)(x² - 3x - 4) = x³ - 5x² + 2x + 8
+    """
+    # Convert candidate to Fraction if not already
+    if not isinstance(candidate, Fraction):
+        candidate = Fraction(candidate)
+
+    # Start with empty result row
+    result = []
+    current_value = Fraction(0)
+
+    # Process each coefficient
+    for i, coef in enumerate(coefficients):
+        if i == 0:
+            # First step: just bring down the first coefficient
+            current_value = Fraction(coef)
+        else:
+            # Multiply previous result by candidate and add current coefficient
+            current_value = current_value * candidate + Fraction(coef)
+
+        result.append(current_value)
+
+    # The last value is the remainder
+    remainder = result[-1]
+
+    # All values except the last are the quotient coefficients
+    quotient = result[:-1]
+
+    return quotient, remainder
+
+
+def display_synthetic_division(coefficients, candidate, quotient, remainder):
+    """
+    Displays the synthetic division process in a formatted table.
+
+    Shows the step-by-step calculation visually.
+
+    Args:
+        coefficients (list): Original polynomial coefficients
+        candidate (Fraction): The tested value
+        quotient (list): Resulting quotient coefficients
+        remainder (Fraction): The remainder from division
+    """
+    print("\n" + "━" * 70)
+    print(f"Testing candidate: x = {candidate}")
+    print("━" * 70)
+
+    print("\nSynthetic Division:\n")
+
+    # Convert candidate to Fraction for display
+    c = Fraction(candidate) if not isinstance(candidate, Fraction) else candidate
+
+    # Calculate the multiplication row (what we add at each step)
+    multiply_row = [Fraction(0)]  # First entry is always 0 (nothing to multiply yet)
+    current = Fraction(coefficients[0])  # Start with first coefficient
+
+    for i in range(1, len(coefficients)):
+        product = current * c
+        multiply_row.append(product)
+        current = current + Fraction(coefficients[i])
+
+    # Determine column width based on longest number
+    all_numbers = (
+        [str(c)] +
+        [str(Fraction(x)) for x in coefficients] +
+        [str(x) for x in multiply_row] +
+        [str(x) for x in quotient] +
+        [str(remainder)]
+    )
+    col_width = max(len(str(n)) for n in all_numbers) + 2
+
+    # Print candidate and first coefficient row
+    print(f"{str(c):>{col_width}} |", end="")
+    for coef in coefficients:
+        print(f"{str(Fraction(coef)):>{col_width}}", end="")
+    print()
+
+    # Print multiplication row
+    print(f"{' ' * (col_width)} |", end="")
+    for val in multiply_row:
+        if val == 0:
+            print(f"{' ' * col_width}", end="")
+        else:
+            print(f"{str(val):>{col_width}}", end="")
+    print()
+
+    # Print separator line
+    print(f"{' ' * (col_width)} " + "─" * (col_width * len(coefficients) + 2))
+
+    # Print result row (quotient + remainder)
+    print(f"{' ' * (col_width + 1)}", end="")
+    for val in quotient:
+        print(f"{str(val):>{col_width}}", end="")
+    print(f"{str(remainder):>{col_width}}")
+
+    # Print remainder info
+    print(f"\nRemainder: {remainder}")
+
+    # Display result
+    if remainder == 0:
+        print(f"\n✓ x = {candidate} IS a zero!")
+    else:
+        print(f"\n✗ x = {candidate} is NOT a zero (remainder ≠ 0)")
+
+
+def display_factored_form(original_poly, zero_found, quotient_coeffs):
+    """
+    Displays the factored form after finding a zero.
+
+    Args:
+        original_poly (str): Original polynomial as string
+        zero_found (Fraction): The zero that was found
+        quotient_coeffs (list): Quotient coefficients after division
+    """
+    print("\n" + "=" * 70)
+    print("FACTORED FORM")
+    print("=" * 70)
+
+    # Create the factor (x - zero)
+    # If zero is positive: (x - zero)
+    # If zero is negative: (x + |zero|)
+    if zero_found >= 0:
+        factor = f"(x - {zero_found})"
+    else:
+        factor = f"(x + {abs(zero_found)})"
+
+    # Create the quotient polynomial string
+    quotient_poly = display_polynomial(quotient_coeffs, show_zeros=False)
+
+    # Handle quotient display based on degree
+    if len(quotient_coeffs) > 1:
+        quotient_display = f"({quotient_poly})"
+    else:
+        quotient_display = quotient_poly
+
+    print(f"\nOriginal polynomial: {original_poly}")
+    print(f"\nFactored form: {factor} × {quotient_display}")
+    print(f"\nZero found: x = {zero_found}")
+    print(f"Quotient polynomial: {quotient_poly}")
+    print(f"Quotient degree: {len(quotient_coeffs) - 1}")
+
+
 def display_theorem():
     """
     Displays the Rational Zero Theorem explanation.
@@ -379,7 +543,21 @@ def main():
         print(f"\nOriginal input: {poly_input}")
         print(f"Parsed as: {display_polynomial(coefficients, show_zeros=True)}")
         print(f"Degree: {degree}")
-        print(f"Coefficients (descending order): {[int(c) if c == int(c) else c for c in coefficients]}")
+
+        # Display coefficients with clearer explanation
+        coef_display = [int(c) if c == int(c) else c for c in coefficients]
+        print(f"\nCoefficients [from highest to lowest degree]: {coef_display}")
+
+        # Show what each coefficient represents
+        coef_explanation = []
+        for i, c in enumerate(coef_display):
+            power = degree - i
+            if power > 0:
+                coef_explanation.append(f"{c}x^{power}" if power > 1 else f"{c}x")
+            else:
+                coef_explanation.append(f"{c}")
+        print(f"  → {' + '.join(coef_explanation).replace(' + -', ' - ')}")
+        print("  (Ready for synthetic division!)")
 
         # Convert decimals to integers if necessary
         if has_decimals:
@@ -439,15 +617,91 @@ def main():
 
         print(f"\nTotal possible rational zeros: {len(possible_zeros)}")
 
+        # Ask user if they want to test candidates with synthetic division
         print("\n" + "=" * 70)
-        print("NEXT STEPS")
+        print("STEP 4: TESTING CANDIDATES WITH SYNTHETIC DIVISION")
         print("=" * 70)
-        print("""
-To find which of these are ACTUAL zeros:
-1. Test each candidate using synthetic division or substitution
-2. If f(candidate) = 0, then it's a real zero!
-3. Use synthetic division to factor and find remaining zeros
-""")
+
+        user_choice = input("\nBegin testing candidates with synthetic division? (y/n): ").strip().lower()
+
+        if user_choice != 'y':
+            print("\nSkipping synthetic division.")
+            print("\nTo find actual zeros later:")
+            print("1. Test each candidate using synthetic division")
+            print("2. If remainder = 0, that candidate IS a zero!")
+            print("3. Use the quotient to factor further")
+            return
+
+        # Test each candidate until we find a zero
+        print("\nTesting candidates one by one...\n")
+
+        zero_found = None
+        quotient_result = None
+
+        for candidate in possible_zeros:
+            # Perform synthetic division
+            quotient, remainder = synthetic_division(coefficients, candidate)
+
+            # Display the synthetic division table
+            display_synthetic_division(coefficients, candidate, quotient, remainder)
+
+            # Check if we found a zero
+            if remainder == 0:
+                zero_found = candidate
+                quotient_result = quotient
+                break  # Stop after finding first zero
+
+            # Pause briefly between tests for readability
+            print()
+
+        # Display results
+        if zero_found is not None:
+            # Show the factored form
+            original_poly_str = display_polynomial(coefficients, show_zeros=False)
+            display_factored_form(original_poly_str, zero_found, quotient_result)
+
+            # Prompt for further factoring
+            print("\n" + "=" * 70)
+            print("NEXT STEP: FACTOR THE QUOTIENT")
+            print("=" * 70)
+
+            print("\nThe quotient polynomial can be factored further to find more zeros.")
+            print("\nOptions:")
+            print("  1. Run this program again with the quotient polynomial")
+            print("  2. Use the quadratic formula (if quotient is degree 2)")
+            print("  3. Continue factoring manually")
+
+            further = input("\nWould you like to factor the quotient now? (y/n): ").strip().lower()
+
+            if further == 'y':
+                # Convert quotient coefficients back to polynomial string for recursion
+                quotient_poly_str = display_polynomial(quotient_result, show_zeros=False)
+                print(f"\n{'=' * 70}")
+                print(f"ANALYZING QUOTIENT: {quotient_poly_str}")
+                print(f"{'=' * 70}\n")
+
+                # Recursively analyze the quotient
+                # Note: We'll need to parse it again, but we already have coefficients
+                print("(Feature coming soon: Automatic quotient factoring)")
+                print(f"\nFor now, run the program again with input: {quotient_poly_str}")
+            else:
+                print("\nFactoring complete for now!")
+                print(f"Remember: The quotient is {display_polynomial(quotient_result, show_zeros=False)}")
+
+        else:
+            # No zeros found
+            print("\n" + "=" * 70)
+            print("NO RATIONAL ZEROS FOUND")
+            print("=" * 70)
+            print("\nNone of the possible rational zeros are actual zeros!")
+            print("\nThis means the polynomial either:")
+            print("  • Has only irrational zeros (like √2, √3, etc.)")
+            print("  • Has only complex zeros (involving i)")
+            print("  • Cannot be factored using rational numbers")
+            print("\nYou may need to use:")
+            print("  • Quadratic formula (if degree 2)")
+            print("  • Numerical methods")
+            print("  • Graphing to approximate zeros")
 
     except ValueError as e:
         print(f"\nError parsing polynomial: {e}")
