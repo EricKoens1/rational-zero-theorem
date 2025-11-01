@@ -497,6 +497,78 @@ def display_synthetic_division_interactive(coefficients, candidate):
     return quotient, remainder
 
 
+def display_synthetic_division_quick(coefficients, candidate, quotient, remainder):
+    """
+    Displays the synthetic division result quickly without step-by-step.
+
+    Args:
+        coefficients (list): Original polynomial coefficients
+        candidate (Fraction): The tested value
+        quotient (list): Resulting quotient coefficients
+        remainder (Fraction): The remainder from division
+    """
+    print("\n" + "━" * 70)
+    print(f"Testing candidate: x = {candidate}")
+    print("━" * 70)
+
+    print("\nSynthetic Division:\n")
+
+    # Convert candidate to Fraction for display
+    c = Fraction(candidate) if not isinstance(candidate, Fraction) else candidate
+
+    # Calculate the multiplication row (what we add at each step)
+    multiply_row = [Fraction(0)]  # First entry is always 0 (nothing to multiply yet)
+    current = Fraction(coefficients[0])  # Start with first coefficient
+
+    for i in range(1, len(coefficients)):
+        product = current * c
+        multiply_row.append(product)
+        current = current + Fraction(coefficients[i])
+
+    # Determine column width based on longest number
+    all_numbers = (
+        [str(c)] +
+        [str(Fraction(x)) for x in coefficients] +
+        [str(x) for x in multiply_row] +
+        [str(x) for x in quotient] +
+        [str(remainder)]
+    )
+    col_width = max(len(str(n)) for n in all_numbers) + 2
+
+    # Print candidate and first coefficient row
+    print(f"{str(c):>{col_width}} |", end="")
+    for coef in coefficients:
+        print(f"{str(Fraction(coef)):>{col_width}}", end="")
+    print()
+
+    # Print multiplication row
+    print(f"{' ' * (col_width)} |", end="")
+    for val in multiply_row:
+        if val == 0:
+            print(f"{' ' * col_width}", end="")
+        else:
+            print(f"{str(val):>{col_width}}", end="")
+    print()
+
+    # Print separator line
+    print(f"{' ' * (col_width)} " + "─" * (col_width * len(coefficients) + 2))
+
+    # Print result row (quotient + remainder)
+    print(f"{' ' * (col_width + 1)}", end="")
+    for val in quotient:
+        print(f"{str(val):>{col_width}}", end="")
+    print(f"{str(remainder):>{col_width}}")
+
+    # Print remainder info
+    print(f"\nRemainder: {remainder}")
+
+    # Display result
+    if remainder == 0:
+        print(f"\n✓ x = {candidate} IS a zero!")
+    else:
+        print(f"\n✗ x = {candidate} is NOT a zero (remainder ≠ 0)")
+
+
 def display_factored_form(original_poly, zero_found, quotient_coeffs):
     """
     Displays the factored form after finding a zero.
@@ -681,6 +753,15 @@ def main():
             print("3. Use the quotient to factor further")
             return
 
+        # Ask user if they want step-by-step or quick mode
+        print("\nChoose display mode:")
+        print("  1. Step-by-step (press Enter to advance through each calculation)")
+        print("  2. Quick (show only final results)")
+
+        mode_choice = input("\nEnter choice (1 or 2): ").strip()
+
+        step_by_step = (mode_choice == '1')
+
         # Test each candidate until we find a zero
         print("\nTesting candidates one by one...\n")
 
@@ -688,8 +769,13 @@ def main():
         quotient_result = None
 
         for candidate in possible_zeros:
-            # Perform synthetic division with interactive step-through
-            quotient, remainder = display_synthetic_division_interactive(coefficients, candidate)
+            if step_by_step:
+                # Perform synthetic division with interactive step-through
+                quotient, remainder = display_synthetic_division_interactive(coefficients, candidate)
+            else:
+                # Perform synthetic division and display quickly
+                quotient, remainder = synthetic_division(coefficients, candidate)
+                display_synthetic_division_quick(coefficients, candidate, quotient, remainder)
 
             # Check if we found a zero
             if remainder == 0:
