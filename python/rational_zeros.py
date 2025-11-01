@@ -588,6 +588,38 @@ def solve_linear(coefficients):
     return -b / a
 
 
+def simplify_radical(n):
+    """
+    Simplifies √n by extracting perfect square factors.
+
+    Args:
+        n (int): The number under the radical
+
+    Returns:
+        tuple: (coefficient, remaining_radical)
+               e.g., √24 = 2√6 returns (2, 6)
+    """
+    import math
+
+    if n <= 0:
+        return (1, n)
+
+    # Find the largest perfect square factor
+    coefficient = 1
+    remaining = n
+
+    # Check each potential factor up to sqrt(n)
+    i = 2
+    while i * i <= remaining:
+        count = 0
+        while remaining % (i * i) == 0:
+            remaining //= (i * i)
+            coefficient *= i
+        i += 1
+
+    return (coefficient, remaining)
+
+
 def quadratic_formula(coefficients, verbose=True):
     """
     Solves a quadratic equation ax² + bx + c = 0 using the quadratic formula.
@@ -700,19 +732,72 @@ def quadratic_formula(coefficients, verbose=True):
                     else:
                         return [f"({real_part} + {imag_part}i) / {denom}", f"({real_part} - {imag_part}i) / {denom}"], "complex"
         else:
-            # Keep as radical: x = (-b ± i√k) / (2a)
+            # Not a perfect square - simplify the radical: √k = coef√remaining
+            # e.g., √24 = 2√6
+            radical_coef, radical_remaining = simplify_radical(int(imag_part_squared))
+
             if b == 0:
-                # No real part: x = ±i√k / (2a)
-                if 2*a == 1:
-                    return [f"i√{imag_part_squared}", f"-i√{imag_part_squared}"], "complex"
+                # No real part: x = ±(radical_coef)i√k / (2a)
+                from math import gcd
+                # Simplify coefficient with denominator
+                g = gcd(radical_coef, int(2*a))
+                num = radical_coef // g
+                denom = int(2*a) // g
+
+                if denom == 1:
+                    if num == 1:
+                        if radical_remaining == 1:
+                            return ["i", "-i"], "complex"
+                        else:
+                            return [f"i√{radical_remaining}", f"-i√{radical_remaining}"], "complex"
+                    else:
+                        if radical_remaining == 1:
+                            return [f"{num}i", f"-{num}i"], "complex"
+                        else:
+                            return [f"{num}i√{radical_remaining}", f"-{num}i√{radical_remaining}"], "complex"
                 else:
-                    return [f"i√{imag_part_squared} / {2*a}", f"-i√{imag_part_squared} / {2*a}"], "complex"
+                    if num == 1:
+                        if radical_remaining == 1:
+                            return [f"i / {denom}", f"-i / {denom}"], "complex"
+                        else:
+                            return [f"i√{radical_remaining} / {denom}", f"-i√{radical_remaining} / {denom}"], "complex"
+                    else:
+                        if radical_remaining == 1:
+                            return [f"{num}i / {denom}", f"-{num}i / {denom}"], "complex"
+                        else:
+                            return [f"{num}i√{radical_remaining} / {denom}", f"-{num}i√{radical_remaining} / {denom}"], "complex"
             else:
-                # Has real part: x = (-b ± i√k) / (2a)
-                if 2*a == 1:
-                    return [f"({-b} + i√{imag_part_squared})", f"({-b} - i√{imag_part_squared})"], "complex"
+                # Has real part: x = (-b ± (radical_coef)i√k) / (2a)
+                from math import gcd
+                # Find GCD of all components
+                g = gcd(gcd(abs(int(-b)), radical_coef), int(2*a))
+
+                real_part = int(-b) // g
+                imag_coef = radical_coef // g
+                denom = int(2*a) // g
+
+                if denom == 1:
+                    if imag_coef == 1:
+                        if radical_remaining == 1:
+                            return [f"{real_part} + i", f"{real_part} - i"], "complex"
+                        else:
+                            return [f"{real_part} + i√{radical_remaining}", f"{real_part} - i√{radical_remaining}"], "complex"
+                    else:
+                        if radical_remaining == 1:
+                            return [f"{real_part} + {imag_coef}i", f"{real_part} - {imag_coef}i"], "complex"
+                        else:
+                            return [f"{real_part} + {imag_coef}i√{radical_remaining}", f"{real_part} - {imag_coef}i√{radical_remaining}"], "complex"
                 else:
-                    return [f"({-b} + i√{imag_part_squared}) / {2*a}", f"({-b} - i√{imag_part_squared}) / {2*a}"], "complex"
+                    if imag_coef == 1:
+                        if radical_remaining == 1:
+                            return [f"({real_part} + i) / {denom}", f"({real_part} - i) / {denom}"], "complex"
+                        else:
+                            return [f"({real_part} + i√{radical_remaining}) / {denom}", f"({real_part} - i√{radical_remaining}) / {denom}"], "complex"
+                    else:
+                        if radical_remaining == 1:
+                            return [f"({real_part} + {imag_coef}i) / {denom}", f"({real_part} - {imag_coef}i) / {denom}"], "complex"
+                        else:
+                            return [f"({real_part} + {imag_coef}i√{radical_remaining}) / {denom}", f"({real_part} - {imag_coef}i√{radical_remaining}) / {denom}"], "complex"
 
 
 def find_all_zeros_recursive(coefficients, possible_zeros, step_by_step=False, last_zero=None):
