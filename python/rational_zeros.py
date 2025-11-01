@@ -377,53 +377,95 @@ def synthetic_division(coefficients, candidate):
     return quotient, remainder
 
 
-def display_synthetic_division(coefficients, candidate, quotient, remainder):
+def display_synthetic_division_interactive(coefficients, candidate):
     """
-    Displays the synthetic division process in a formatted table.
-
-    Shows the step-by-step calculation visually.
+    Displays the synthetic division process step-by-step with user interaction.
+    User presses Enter to advance through each step.
 
     Args:
         coefficients (list): Original polynomial coefficients
         candidate (Fraction): The tested value
-        quotient (list): Resulting quotient coefficients
-        remainder (Fraction): The remainder from division
+
+    Returns:
+        tuple: (quotient, remainder)
     """
     print("\n" + "━" * 70)
     print(f"Testing candidate: x = {candidate}")
     print("━" * 70)
 
-    print("\nSynthetic Division:\n")
-
-    # Convert candidate to Fraction for display
+    # Convert candidate to Fraction
     c = Fraction(candidate) if not isinstance(candidate, Fraction) else candidate
 
-    # Calculate the multiplication row (what we add at each step)
-    multiply_row = [Fraction(0)]  # First entry is always 0 (nothing to multiply yet)
-    current = Fraction(coefficients[0])  # Start with first coefficient
-
-    for i in range(1, len(coefficients)):
-        product = current * c
-        multiply_row.append(product)
-        current = current + Fraction(coefficients[i])
-
-    # Determine column width based on longest number
-    all_numbers = (
-        [str(c)] +
-        [str(Fraction(x)) for x in coefficients] +
-        [str(x) for x in multiply_row] +
-        [str(x) for x in quotient] +
-        [str(remainder)]
-    )
+    # Determine column width
+    all_numbers = [str(c)] + [str(Fraction(x)) for x in coefficients]
     col_width = max(len(str(n)) for n in all_numbers) + 2
 
-    # Print candidate and first coefficient row
+    print("\nSynthetic Division - Step by Step")
+    print("(Press Enter to continue through each step)\n")
+
+    # Print the setup
+    print(f"{str(c):>{col_width}} |", end="")
+    for coef in coefficients:
+        print(f"{str(Fraction(coef)):>{col_width}}", end="")
+    print("\n" + " " * (col_width) + "|")
+
+    input("Press Enter to begin...")
+
+    # Step-by-step execution
+    result = []
+    multiply_row = []
+    current_value = Fraction(0)
+
+    for i, coef in enumerate(coefficients):
+        if i == 0:
+            # Step 1: Bring down first coefficient
+            print(f"\n{'─' * 70}")
+            print(f"STEP 1: Bring down the leading coefficient")
+            print(f"{'─' * 70}")
+            current_value = Fraction(coef)
+            result.append(current_value)
+            multiply_row.append(Fraction(0))
+
+            print(f"\nBring down: {current_value}")
+            print(f"\nCurrent result row: [{current_value}]")
+
+            if i < len(coefficients) - 1:
+                input("\nPress Enter to continue...")
+
+        else:
+            # Step 2+: Multiply and add
+            step_number = i + 1
+            print(f"\n{'─' * 70}")
+            print(f"STEP {step_number}: Multiply and Add")
+            print(f"{'─' * 70}")
+
+            # Multiply previous result by candidate
+            product = result[-1] * c
+            multiply_row.append(product)
+
+            print(f"\nMultiply: {result[-1]} × {c} = {product}")
+            print(f"Add to next coefficient: {product} + {Fraction(coef)} = {product + Fraction(coef)}")
+
+            # Add to current coefficient
+            current_value = product + Fraction(coef)
+            result.append(current_value)
+
+            print(f"\nCurrent result row: {[str(x) for x in result]}")
+
+            if i < len(coefficients) - 1:
+                input("\nPress Enter to continue...")
+
+    # Display final table
+    print(f"\n{'═' * 70}")
+    print("FINAL RESULT")
+    print(f"{'═' * 70}\n")
+
+    # Print complete table
     print(f"{str(c):>{col_width}} |", end="")
     for coef in coefficients:
         print(f"{str(Fraction(coef)):>{col_width}}", end="")
     print()
 
-    # Print multiplication row
     print(f"{' ' * (col_width)} |", end="")
     for val in multiply_row:
         if val == 0:
@@ -432,23 +474,27 @@ def display_synthetic_division(coefficients, candidate, quotient, remainder):
             print(f"{str(val):>{col_width}}", end="")
     print()
 
-    # Print separator line
     print(f"{' ' * (col_width)} " + "─" * (col_width * len(coefficients) + 2))
 
-    # Print result row (quotient + remainder)
     print(f"{' ' * (col_width + 1)}", end="")
-    for val in quotient:
+    for val in result:
         print(f"{str(val):>{col_width}}", end="")
-    print(f"{str(remainder):>{col_width}}")
+    print()
 
-    # Print remainder info
-    print(f"\nRemainder: {remainder}")
+    # Extract quotient and remainder
+    quotient = result[:-1]
+    remainder = result[-1]
+
+    print(f"\nQuotient coefficients: {[str(x) for x in quotient]}")
+    print(f"Remainder: {remainder}")
 
     # Display result
     if remainder == 0:
         print(f"\n✓ x = {candidate} IS a zero!")
     else:
         print(f"\n✗ x = {candidate} is NOT a zero (remainder ≠ 0)")
+
+    return quotient, remainder
 
 
 def display_factored_form(original_poly, zero_found, quotient_coeffs):
@@ -492,9 +538,6 @@ def display_theorem():
     """
     Displays the Rational Zero Theorem explanation.
     """
-    print("\n" + "=" * 70)
-    print("RATIONAL ZERO THEOREM")
-    print("=" * 70)
     print("""
 For a polynomial with integer coefficients:
 
@@ -508,7 +551,6 @@ If p/q is a rational zero (where p and q have no common factors), then:
 This theorem gives us ALL POSSIBLE rational zeros to test.
 Not all of these will actually be zeros - they're candidates to check!
 """)
-    print("=" * 70 + "\n")
 
 
 def main():
@@ -560,6 +602,7 @@ def main():
         print("  (Ready for synthetic division!)")
 
         # Convert decimals to integers if necessary
+        step_num = 2  # Track step numbers
         if has_decimals:
             print("\n" + "-" * 70)
             print("STEP 2: CONVERTING DECIMALS TO INTEGERS")
@@ -573,6 +616,7 @@ def main():
             print(f"Integer form: {display_polynomial(coefficients, show_zeros=True)}")
             print(f"Integer coefficients: {coefficients}")
             print("\nNote: This doesn't change the zeros of the function!")
+            step_num = 3
 
         # Extract leading coefficient and constant term
         leading_coef = int(coefficients[0])
@@ -588,12 +632,17 @@ def main():
             print("For non-zero rational zeros, we can factor out x and analyze the remaining polynomial.")
 
         # Display the theorem
+        print("\n" + "-" * 70)
+        print(f"STEP {step_num}: RATIONAL ZERO THEOREM")
+        print("-" * 70)
         display_theorem()
+        step_num += 1
 
         # Show the calculation steps
         print("-" * 70)
-        print("STEP 3: FINDING POSSIBLE RATIONAL ZEROS")
+        print(f"STEP {step_num}: FINDING POSSIBLE RATIONAL ZEROS")
         print("-" * 70)
+        step_num += 1
 
         print(f"\nLeading coefficient (aₙ): {leading_coef}")
         print(f"Constant term (a₀): {constant_term}")
@@ -619,7 +668,7 @@ def main():
 
         # Ask user if they want to test candidates with synthetic division
         print("\n" + "=" * 70)
-        print("STEP 4: TESTING CANDIDATES WITH SYNTHETIC DIVISION")
+        print(f"STEP {step_num}: TESTING CANDIDATES WITH SYNTHETIC DIVISION")
         print("=" * 70)
 
         user_choice = input("\nBegin testing candidates with synthetic division? (y/n): ").strip().lower()
@@ -639,11 +688,8 @@ def main():
         quotient_result = None
 
         for candidate in possible_zeros:
-            # Perform synthetic division
-            quotient, remainder = synthetic_division(coefficients, candidate)
-
-            # Display the synthetic division table
-            display_synthetic_division(coefficients, candidate, quotient, remainder)
+            # Perform synthetic division with interactive step-through
+            quotient, remainder = display_synthetic_division_interactive(coefficients, candidate)
 
             # Check if we found a zero
             if remainder == 0:
@@ -651,7 +697,12 @@ def main():
                 quotient_result = quotient
                 break  # Stop after finding first zero
 
-            # Pause briefly between tests for readability
+            # If not a zero, ask if they want to continue testing
+            if remainder != 0:
+                continue_testing = input("\nContinue testing next candidate? (y/n): ").strip().lower()
+                if continue_testing != 'y':
+                    print("\nStopping synthetic division tests.")
+                    break
             print()
 
         # Display results
