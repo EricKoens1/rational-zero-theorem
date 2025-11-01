@@ -782,19 +782,30 @@ def find_all_zeros_recursive(coefficients, possible_zeros, step_by_step=False, l
     return []
 
 
-def display_complete_factorization(original_poly, all_zeros):
+def display_complete_factorization(original_poly, all_zeros, degree=None, possible_zeros=None):
     """
     Displays the complete factorization with all zeros found.
 
     Args:
         original_poly (str): Original polynomial string
         all_zeros (list): List of (zero, multiplicity) or (zero, multiplicity, type) tuples
+        degree (int): Degree of the polynomial
+        possible_zeros (list): List of all possible rational zeros from Rational Zero Theorem
     """
     print("\n" + "=" * 70)
     print("COMPLETE FACTORIZATION")
     print("=" * 70)
 
     print(f"\nOriginal polynomial: {original_poly}")
+
+    if degree is not None:
+        print(f"Degree: {degree}")
+
+    if possible_zeros is not None:
+        zeros_display_list = [str(z) for z in possible_zeros]
+        print(f"\nPossible rational zeros (from Rational Zero Theorem):")
+        print(f"  {', '.join(zeros_display_list)}")
+        print(f"  Total candidates: {len(possible_zeros)}")
 
     # Build factored form
     factors = []
@@ -1056,7 +1067,7 @@ def main():
                 print("\n" + "=" * 70)
                 print("RESULT")
                 print("=" * 70)
-                display_complete_factorization(original_poly_str, all_zeros)
+                display_complete_factorization(original_poly_str, all_zeros, degree, possible_zeros)
             else:
                 print("\n" + "=" * 70)
                 print("NO RATIONAL ZEROS FOUND")
@@ -1111,7 +1122,7 @@ def main():
                     all_zeros = find_all_zeros_recursive(int_coeffs, possible_zeros, step_by_step, last_zero=None)
 
                     # Display complete factorization
-                    display_complete_factorization(original_poly_str, all_zeros)
+                    display_complete_factorization(original_poly_str, all_zeros, degree, possible_zeros)
                 else:
                     print("\nFactoring stopped at first zero.")
                     print(f"Quotient remaining: {display_polynomial(quotient_result, show_zeros=False)}")
