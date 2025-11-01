@@ -679,17 +679,26 @@ def quadratic_formula(coefficients, verbose=True):
                         else:
                             return [f"{num}i / {denom}", f"-{num}i / {denom}"], "complex"
             else:
-                # Has real part
-                if 2*a == 1:
-                    if sqrt_simplified == 1:
-                        return [f"{-b} + i", f"{-b} - i"], "complex"
+                # Has real part: (-b ± ki) / (2a) where k = sqrt_simplified
+                from math import gcd
+
+                # Find GCD of -b, sqrt_simplified, and 2a to simplify the entire expression
+                g = gcd(gcd(abs(int(-b)), sqrt_simplified), int(2*a))
+
+                real_part = int(-b) // g
+                imag_part = sqrt_simplified // g
+                denom = int(2*a) // g
+
+                if denom == 1:
+                    if imag_part == 1:
+                        return [f"{real_part} + i", f"{real_part} - i"], "complex"
                     else:
-                        return [f"{-b} + {sqrt_simplified}i", f"{-b} - {sqrt_simplified}i"], "complex"
+                        return [f"{real_part} + {imag_part}i", f"{real_part} - {imag_part}i"], "complex"
                 else:
-                    if sqrt_simplified == 1:
-                        return [f"({-b} + i) / {2*a}", f"({-b} - i) / {2*a}"], "complex"
+                    if imag_part == 1:
+                        return [f"({real_part} + i) / {denom}", f"({real_part} - i) / {denom}"], "complex"
                     else:
-                        return [f"({-b} + {sqrt_simplified}i) / {2*a}", f"({-b} - {sqrt_simplified}i) / {2*a}"], "complex"
+                        return [f"({real_part} + {imag_part}i) / {denom}", f"({real_part} - {imag_part}i) / {denom}"], "complex"
         else:
             # Keep as radical: x = (-b ± i√k) / (2a)
             if b == 0:
