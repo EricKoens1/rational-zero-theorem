@@ -632,32 +632,78 @@ def quadratic_formula(coefficients, verbose=True):
         return [x], "rational"
 
     else:
-        # Two complex solutions
+        # Two complex solutions: x = (-b ± i√(-discriminant)) / (2a)
         import math
-        real_part = -b / (2*a)
+
+        # For complex: discriminant < 0, so -discriminant > 0
         imag_part_squared = -discriminant
-
-        # Simplify the imaginary part if possible
-        sqrt_imag = math.sqrt(float(imag_part_squared))
-        denominator = 2 * a
-
-        # Try to simplify the fraction
-        sqrt_frac = Fraction(sqrt_imag).limit_denominator() / denominator
 
         if verbose:
             print(f"  Two complex solutions")
 
-        # Format nicely
-        if real_part == 0:
-            if sqrt_frac == 1:
-                return ["i", "-i"], "complex"
+        # Simplify perfect squares under the radical
+        sqrt_val = math.sqrt(float(imag_part_squared))
+        is_perfect_square = (sqrt_val == int(sqrt_val))
+
+        if is_perfect_square:
+            # Simplify: √k = integer
+            sqrt_simplified = int(sqrt_val)
+
+            if b == 0:
+                # No real part: x = ±i*k / (2a)
+                denom = int(2*a)
+                if denom == 1:
+                    if sqrt_simplified == 1:
+                        return ["i", "-i"], "complex"
+                    else:
+                        return [f"{sqrt_simplified}i", f"-{sqrt_simplified}i"], "complex"
+                else:
+                    if sqrt_simplified == 1:
+                        if denom == 1:
+                            return ["i", "-i"], "complex"
+                        return [f"i / {denom}", f"-i / {denom}"], "complex"
+                    else:
+                        # Simplify fraction if possible
+                        from math import gcd
+                        g = gcd(sqrt_simplified, int(2*a))
+                        num = sqrt_simplified // g
+                        denom = int(2*a) // g
+
+                        # Further simplify if numerator or denominator is 1
+                        if num == 1 and denom == 1:
+                            return ["i", "-i"], "complex"
+                        elif denom == 1:
+                            return [f"{num}i", f"-{num}i"], "complex"
+                        elif num == 1:
+                            return [f"i / {denom}", f"-i / {denom}"], "complex"
+                        else:
+                            return [f"{num}i / {denom}", f"-{num}i / {denom}"], "complex"
             else:
-                return [f"{sqrt_frac}i", f"-{sqrt_frac}i"], "complex"
+                # Has real part
+                if 2*a == 1:
+                    if sqrt_simplified == 1:
+                        return [f"{-b} + i", f"{-b} - i"], "complex"
+                    else:
+                        return [f"{-b} + {sqrt_simplified}i", f"{-b} - {sqrt_simplified}i"], "complex"
+                else:
+                    if sqrt_simplified == 1:
+                        return [f"({-b} + i) / {2*a}", f"({-b} - i) / {2*a}"], "complex"
+                    else:
+                        return [f"({-b} + {sqrt_simplified}i) / {2*a}", f"({-b} - {sqrt_simplified}i) / {2*a}"], "complex"
         else:
-            if sqrt_frac == 1:
-                return [f"{real_part} + i", f"{real_part} - i"], "complex"
+            # Keep as radical: x = (-b ± i√k) / (2a)
+            if b == 0:
+                # No real part: x = ±i√k / (2a)
+                if 2*a == 1:
+                    return [f"i√{imag_part_squared}", f"-i√{imag_part_squared}"], "complex"
+                else:
+                    return [f"i√{imag_part_squared} / {2*a}", f"-i√{imag_part_squared} / {2*a}"], "complex"
             else:
-                return [f"{real_part} + {sqrt_frac}i", f"{real_part} - {sqrt_frac}i"], "complex"
+                # Has real part: x = (-b ± i√k) / (2a)
+                if 2*a == 1:
+                    return [f"({-b} + i√{imag_part_squared})", f"({-b} - i√{imag_part_squared})"], "complex"
+                else:
+                    return [f"({-b} + i√{imag_part_squared}) / {2*a}", f"({-b} - i√{imag_part_squared}) / {2*a}"], "complex"
 
 
 def find_all_zeros_recursive(coefficients, possible_zeros, step_by_step=False, last_zero=None):
