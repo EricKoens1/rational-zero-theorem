@@ -588,12 +588,13 @@ def solve_linear(coefficients):
     return -b / a
 
 
-def quadratic_formula(coefficients):
+def quadratic_formula(coefficients, verbose=True):
     """
     Solves a quadratic equation ax² + bx + c = 0 using the quadratic formula.
 
     Args:
         coefficients (list): [a, b, c] where equation is ax² + bx + c = 0
+        verbose (bool): Whether to print detailed steps
 
     Returns:
         list: Solutions (may be real or complex)
@@ -605,9 +606,10 @@ def quadratic_formula(coefficients):
     # Calculate discriminant: b² - 4ac
     discriminant = b*b - 4*a*c
 
-    print(f"\nUsing Quadratic Formula: x = (-b ± √(b² - 4ac)) / 2a")
-    print(f"  a = {a}, b = {b}, c = {c}")
-    print(f"  Discriminant (b² - 4ac) = {discriminant}")
+    if verbose:
+        print(f"\nUsing Quadratic Formula: x = (-b ± √(b² - 4ac)) / 2a")
+        print(f"  a = {a}, b = {b}, c = {c}")
+        print(f"  Discriminant (b² - 4ac) = {discriminant}")
 
     if discriminant > 0:
         # Two real solutions
@@ -618,13 +620,15 @@ def quadratic_formula(coefficients):
         x1 = (-b + Fraction(sqrt_disc).limit_denominator()) / (2*a)
         x2 = (-b - Fraction(sqrt_disc).limit_denominator()) / (2*a)
 
-        print(f"  Two real solutions (irrational)")
+        if verbose:
+            print(f"  Two real solutions (irrational)")
         return [f"({-b} + √{discriminant}) / {2*a}", f"({-b} - √{discriminant}) / {2*a}"], "real"
 
     elif discriminant == 0:
         # One real solution (repeated)
         x = -b / (2*a)
-        print(f"  One repeated real solution")
+        if verbose:
+            print(f"  One repeated real solution")
         return [x], "rational"
 
     else:
@@ -640,7 +644,8 @@ def quadratic_formula(coefficients):
         # Try to simplify the fraction
         sqrt_frac = Fraction(sqrt_imag).limit_denominator() / denominator
 
-        print(f"  Two complex solutions")
+        if verbose:
+            print(f"  Two complex solutions")
 
         # Format nicely
         if real_part == 0:
@@ -671,23 +676,26 @@ def find_all_zeros_recursive(coefficients, possible_zeros, step_by_step=False, l
     degree = len(coefficients) - 1
     zeros_found = []
 
-    print(f"\n{'─' * 70}")
-    print(f"Current polynomial degree: {degree}")
-    print(f"Coefficients: {[str(c) if isinstance(c, Fraction) else c for c in coefficients]}")
-    print(f"Polynomial: {display_polynomial(coefficients, show_zeros=False)}")
-    print(f"{'─' * 70}")
+    if step_by_step:
+        print(f"\n{'─' * 70}")
+        print(f"Current polynomial degree: {degree}")
+        print(f"Coefficients: {[str(c) if isinstance(c, Fraction) else c for c in coefficients]}")
+        print(f"Polynomial: {display_polynomial(coefficients, show_zeros=False)}")
+        print(f"{'─' * 70}")
 
     # Base cases
     if degree == 1:
         # Linear: solve directly
         zero = solve_linear(coefficients)
-        print(f"\n✓ Linear equation: {coefficients[0]}x + {coefficients[1]} = 0")
-        print(f"  Solution: x = {zero}")
+        if step_by_step:
+            print(f"\n✓ Linear equation: {coefficients[0]}x + {coefficients[1]} = 0")
+            print(f"  Solution: x = {zero}")
         return [(zero, 1)]
 
     elif degree == 2:
         # Quadratic: try rational zeros first, then quadratic formula
-        print(f"\nQuadratic polynomial detected. Testing rational zeros first...")
+        if step_by_step:
+            print(f"\nQuadratic polynomial detected. Testing rational zeros first...")
 
         # Reorder to test last_zero first if it exists
         test_order = possible_zeros.copy()
@@ -700,17 +708,20 @@ def find_all_zeros_recursive(coefficients, possible_zeros, step_by_step=False, l
             quotient, remainder = synthetic_division(coefficients, candidate)
 
             if remainder == 0:
-                print(f"\n✓ Found rational zero: x = {candidate}")
+                if step_by_step:
+                    print(f"\n✓ Found rational zero: x = {candidate}")
 
                 # Solve the linear quotient
                 final_zero = solve_linear(quotient)
-                print(f"✓ Remaining linear factor gives: x = {final_zero}")
+                if step_by_step:
+                    print(f"✓ Remaining linear factor gives: x = {final_zero}")
 
                 return [(candidate, 1), (final_zero, 1)]
 
         # No rational zeros, use quadratic formula
-        print(f"\nNo rational zeros found for quadratic. Using quadratic formula...")
-        solutions, solution_type = quadratic_formula(coefficients)
+        if step_by_step:
+            print(f"\nNo rational zeros found for quadratic. Using quadratic formula...")
+        solutions, solution_type = quadratic_formula(coefficients, verbose=step_by_step)
 
         if solution_type == "rational":
             return [(solutions[0], 2)]  # Repeated root
@@ -719,14 +730,16 @@ def find_all_zeros_recursive(coefficients, possible_zeros, step_by_step=False, l
             return [(solutions[0], 1, solution_type), (solutions[1], 1, solution_type)]
 
     # Degree >= 3: find rational zeros
-    print(f"\nTesting candidates from original possible zeros list...")
+    if step_by_step:
+        print(f"\nTesting candidates from original possible zeros list...")
 
     # Reorder to test last_zero first if it exists
     test_order = possible_zeros.copy()
     if last_zero and last_zero in test_order:
         test_order.remove(last_zero)
         test_order.insert(0, last_zero)
-        print(f"Testing x = {last_zero} first (checking for multiplicity)...")
+        if step_by_step:
+            print(f"Testing x = {last_zero} first (checking for multiplicity)...")
 
     # Test each candidate
     for candidate in test_order:
@@ -734,13 +747,13 @@ def find_all_zeros_recursive(coefficients, possible_zeros, step_by_step=False, l
             quotient, remainder = display_synthetic_division_interactive(coefficients, candidate)
         else:
             quotient, remainder = synthetic_division(coefficients, candidate)
-            display_synthetic_division_quick(coefficients, candidate, quotient, remainder)
 
         if remainder == 0:
             # Found a zero!
-            print(f"\n{'═' * 70}")
-            print(f"✓ ZERO FOUND: x = {candidate}")
-            print(f"{'═' * 70}")
+            if step_by_step:
+                print(f"\n{'═' * 70}")
+                print(f"✓ ZERO FOUND: x = {candidate}")
+                print(f"{'═' * 70}")
 
             # Recursively find remaining zeros
             remaining_zeros = find_all_zeros_recursive(quotient, possible_zeros, step_by_step, candidate)
@@ -908,48 +921,67 @@ def main():
         print("Error: No input provided.")
         return
 
+    # Ask user for display mode at the beginning
+    print("\n" + "=" * 70)
+    print("CHOOSE DISPLAY MODE")
+    print("=" * 70)
+    print("\n  1. Step-by-step guide (educational - shows all work)")
+    print("  2. Quick answer (just calculate and show final result)")
+
+    mode_choice = input("\nEnter choice (1 or 2): ").strip()
+    step_by_step = (mode_choice == '1')
+
+    if step_by_step:
+        print("\nStep-by-step mode selected. You'll see detailed explanations.")
+    else:
+        print("\nQuick mode selected. Calculating final answer...")
+
     try:
         # Parse the polynomial
-        print("\n" + "-" * 70)
-        print("STEP 1: PARSING POLYNOMIAL")
-        print("-" * 70)
+        if step_by_step:
+            print("\n" + "-" * 70)
+            print("STEP 1: PARSING POLYNOMIAL")
+            print("-" * 70)
 
         coefficients, degree, has_decimals = parse_polynomial(poly_input)
 
-        print(f"\nOriginal input: {poly_input}")
-        print(f"Parsed as: {display_polynomial(coefficients, show_zeros=True)}")
-        print(f"Degree: {degree}")
+        if step_by_step:
+            print(f"\nOriginal input: {poly_input}")
+            print(f"Parsed as: {display_polynomial(coefficients, show_zeros=True)}")
+            print(f"Degree: {degree}")
 
-        # Display coefficients with clearer explanation
-        coef_display = [int(c) if c == int(c) else c for c in coefficients]
-        print(f"\nCoefficients [from highest to lowest degree]: {coef_display}")
+            # Display coefficients with clearer explanation
+            coef_display = [int(c) if c == int(c) else c for c in coefficients]
+            print(f"\nCoefficients [from highest to lowest degree]: {coef_display}")
 
-        # Show what each coefficient represents
-        coef_explanation = []
-        for i, c in enumerate(coef_display):
-            power = degree - i
-            if power > 0:
-                coef_explanation.append(f"{c}x^{power}" if power > 1 else f"{c}x")
-            else:
-                coef_explanation.append(f"{c}")
-        print(f"  → {' + '.join(coef_explanation).replace(' + -', ' - ')}")
-        print("  (Ready for synthetic division!)")
+            # Show what each coefficient represents
+            coef_explanation = []
+            for i, c in enumerate(coef_display):
+                power = degree - i
+                if power > 0:
+                    coef_explanation.append(f"{c}x^{power}" if power > 1 else f"{c}x")
+                else:
+                    coef_explanation.append(f"{c}")
+            print(f"  → {' + '.join(coef_explanation).replace(' + -', ' - ')}")
+            print("  (Ready for synthetic division!)")
 
         # Convert decimals to integers if necessary
         step_num = 2  # Track step numbers
         if has_decimals:
-            print("\n" + "-" * 70)
-            print("STEP 2: CONVERTING DECIMALS TO INTEGERS")
-            print("-" * 70)
-            print("\nRational Zero Theorem requires integer coefficients.")
-            print("Converting by multiplying through...")
+            if step_by_step:
+                print("\n" + "-" * 70)
+                print("STEP 2: CONVERTING DECIMALS TO INTEGERS")
+                print("-" * 70)
+                print("\nRational Zero Theorem requires integer coefficients.")
+                print("Converting by multiplying through...")
 
             coefficients, multiplier = convert_to_integers(coefficients)
 
-            print(f"\nMultiplied all terms by: {multiplier}")
-            print(f"Integer form: {display_polynomial(coefficients, show_zeros=True)}")
-            print(f"Integer coefficients: {coefficients}")
-            print("\nNote: This doesn't change the zeros of the function!")
+            if step_by_step:
+                print(f"\nMultiplied all terms by: {multiplier}")
+                print(f"Integer form: {display_polynomial(coefficients, show_zeros=True)}")
+                print(f"Integer coefficients: {coefficients}")
+                print("\nNote: This doesn't change the zeros of the function!")
             step_num = 3
 
         # Extract leading coefficient and constant term
@@ -961,147 +993,144 @@ def main():
             print("\nError: Leading coefficient cannot be zero!")
             return
 
-        if constant_term == 0:
+        if constant_term == 0 and step_by_step:
             print("\nNote: Constant term is 0, so x = 0 is automatically a zero.")
             print("For non-zero rational zeros, we can factor out x and analyze the remaining polynomial.")
 
         # Display the theorem
-        print("\n" + "-" * 70)
-        print(f"STEP {step_num}: RATIONAL ZERO THEOREM")
-        print("-" * 70)
-        display_theorem()
-        step_num += 1
+        if step_by_step:
+            print("\n" + "-" * 70)
+            print(f"STEP {step_num}: RATIONAL ZERO THEOREM")
+            print("-" * 70)
+            display_theorem()
+            step_num += 1
 
-        # Show the calculation steps
-        print("-" * 70)
-        print(f"STEP {step_num}: FINDING POSSIBLE RATIONAL ZEROS")
-        print("-" * 70)
-        step_num += 1
+            # Show the calculation steps
+            print("-" * 70)
+            print(f"STEP {step_num}: FINDING POSSIBLE RATIONAL ZEROS")
+            print("-" * 70)
+            step_num += 1
 
-        print(f"\nLeading coefficient (aₙ): {leading_coef}")
-        print(f"Constant term (a₀): {constant_term}")
+            print(f"\nLeading coefficient (aₙ): {leading_coef}")
+            print(f"Constant term (a₀): {constant_term}")
 
         # Find factors
         p_factors = find_factors(abs(constant_term))
         q_factors = find_factors(abs(leading_coef))
 
-        print(f"\nFactors of constant term ({constant_term}): ±{p_factors}")
-        print(f"Factors of leading coefficient ({leading_coef}): ±{q_factors}")
+        if step_by_step:
+            print(f"\nFactors of constant term ({constant_term}): ±{p_factors}")
+            print(f"Factors of leading coefficient ({leading_coef}): ±{q_factors}")
 
         # Calculate rational zeros
         possible_zeros = calculate_rational_zeros(leading_coef, constant_term)
 
-        print(f"\nPossible rational zeros (p/q):")
-        print("-" * 70)
+        if step_by_step:
+            print(f"\nPossible rational zeros (p/q):")
+            print("-" * 70)
 
-        # Display as fractions
-        zeros_display = [str(z) for z in possible_zeros]
-        print(", ".join(zeros_display))
+            # Display as fractions
+            zeros_display = [str(z) for z in possible_zeros]
+            print(", ".join(zeros_display))
 
-        print(f"\nTotal possible rational zeros: {len(possible_zeros)}")
+            print(f"\nTotal possible rational zeros: {len(possible_zeros)}")
 
-        # Ask user if they want to test candidates with synthetic division
-        print("\n" + "=" * 70)
-        print(f"STEP {step_num}: TESTING CANDIDATES WITH SYNTHETIC DIVISION")
-        print("=" * 70)
-
-        user_choice = input("\nBegin testing candidates with synthetic division? (y/n): ").strip().lower()
-
-        if user_choice != 'y':
-            print("\nSkipping synthetic division.")
-            print("\nTo find actual zeros later:")
-            print("1. Test each candidate using synthetic division")
-            print("2. If remainder = 0, that candidate IS a zero!")
-            print("3. Use the quotient to factor further")
-            return
-
-        # Ask user if they want step-by-step or quick mode
-        print("\nChoose display mode:")
-        print("  1. Step-by-step (press Enter to advance through each calculation)")
-        print("  2. Quick (show only final results)")
-
-        mode_choice = input("\nEnter choice (1 or 2): ").strip()
-
-        step_by_step = (mode_choice == '1')
-
-        # Test each candidate until we find a zero
-        print("\nTesting candidates one by one...\n")
-
-        zero_found = None
-        quotient_result = None
-
-        for candidate in possible_zeros:
-            if step_by_step:
-                # Perform synthetic division with interactive step-through
-                quotient, remainder = display_synthetic_division_interactive(coefficients, candidate)
-            else:
-                # Perform synthetic division and display quickly
-                quotient, remainder = synthetic_division(coefficients, candidate)
-                display_synthetic_division_quick(coefficients, candidate, quotient, remainder)
-
-            # Check if we found a zero
-            if remainder == 0:
-                zero_found = candidate
-                quotient_result = quotient
-                break  # Stop after finding first zero
-
-            # If not a zero, ask if they want to continue testing
-            if remainder != 0:
-                continue_testing = input("\nContinue testing next candidate? (y/n): ").strip().lower()
-                if continue_testing != 'y':
-                    print("\nStopping synthetic division tests.")
-                    break
-            print()
-
-        # Display results of first zero
-        if zero_found is not None:
-            # Show the first zero found
-            original_poly_str = display_polynomial(coefficients, show_zeros=False)
-            display_factored_form(original_poly_str, zero_found, quotient_result)
-
-            # Ask if user wants to find ALL zeros
+            # Show testing step header
             print("\n" + "=" * 70)
-            print("CONTINUE FACTORING TO FIND ALL ZEROS?")
+            print(f"STEP {step_num}: TESTING CANDIDATES WITH SYNTHETIC DIVISION")
             print("=" * 70)
+            print("\nTesting candidates one by one...\n")
+        else:
+            print("\nFinding zeros...")
 
-            print("\nWe found the first zero. We can now:")
-            print("  1. Find ALL remaining zeros automatically (recommended)")
-            print("  2. Stop here")
+        # In quick mode, automatically find all zeros without intermediate display
+        # In step-by-step mode, show the process
+        original_poly_str = display_polynomial(coefficients, show_zeros=False)
+        int_coeffs = [int(c) for c in coefficients]
 
-            continue_all = input("\nFind all zeros automatically? (y/n): ").strip().lower()
+        if not step_by_step:
+            # Quick mode: just find all zeros automatically
+            all_zeros = find_all_zeros_recursive(int_coeffs, possible_zeros, step_by_step=False, last_zero=None)
 
-            if continue_all == 'y':
-                # Use recursive function to find ALL zeros
+            if all_zeros:
                 print("\n" + "=" * 70)
-                print("FINDING ALL ZEROS")
+                print("RESULT")
                 print("=" * 70)
-
-                # Start fresh with full recursive search
-                # Convert coefficients to integers for clean display
-                int_coeffs = [int(c) for c in coefficients]
-                all_zeros = find_all_zeros_recursive(int_coeffs, possible_zeros, step_by_step, last_zero=None)
-
-                # Display complete factorization
                 display_complete_factorization(original_poly_str, all_zeros)
             else:
-                print("\nFactoring stopped at first zero.")
-                print(f"Quotient remaining: {display_polynomial(quotient_result, show_zeros=False)}")
-                print(f"\nTo continue, run the program again with the quotient polynomial.")
-
+                print("\n" + "=" * 70)
+                print("NO RATIONAL ZEROS FOUND")
+                print("=" * 70)
+                print("\nThis polynomial has no rational zeros.")
+                print("It may have irrational or complex zeros only.")
         else:
-            # No zeros found
-            print("\n" + "=" * 70)
-            print("NO RATIONAL ZEROS FOUND")
-            print("=" * 70)
-            print("\nNone of the possible rational zeros are actual zeros!")
-            print("\nThis means the polynomial either:")
-            print("  • Has only irrational zeros (like √2, √3, etc.)")
-            print("  • Has only complex zeros (involving i)")
-            print("  • Cannot be factored using rational numbers")
-            print("\nYou may need to use:")
-            print("  • Quadratic formula (if degree 2)")
-            print("  • Numerical methods")
-            print("  • Graphing to approximate zeros")
+            # Step-by-step mode: show first zero, then ask to continue
+            zero_found = None
+            quotient_result = None
+
+            for candidate in possible_zeros:
+                # Perform synthetic division with interactive step-through
+                quotient, remainder = display_synthetic_division_interactive(coefficients, candidate)
+
+                # Check if we found a zero
+                if remainder == 0:
+                    zero_found = candidate
+                    quotient_result = quotient
+                    break  # Stop after finding first zero
+
+                # If not a zero, ask if they want to continue testing
+                if remainder != 0:
+                    continue_testing = input("\nContinue testing next candidate? (y/n): ").strip().lower()
+                    if continue_testing != 'y':
+                        print("\nStopping synthetic division tests.")
+                        break
+                print()
+
+            # Display results of first zero
+            if zero_found is not None:
+                # Show the first zero found
+                display_factored_form(original_poly_str, zero_found, quotient_result)
+
+                # Ask if user wants to find ALL zeros
+                print("\n" + "=" * 70)
+                print("CONTINUE FACTORING TO FIND ALL ZEROS?")
+                print("=" * 70)
+
+                print("\nWe found the first zero. We can now:")
+                print("  1. Find ALL remaining zeros automatically (recommended)")
+                print("  2. Stop here")
+
+                continue_all = input("\nFind all zeros automatically? (y/n): ").strip().lower()
+
+                if continue_all == 'y':
+                    # Use recursive function to find ALL zeros
+                    print("\n" + "=" * 70)
+                    print("FINDING ALL ZEROS")
+                    print("=" * 70)
+
+                    all_zeros = find_all_zeros_recursive(int_coeffs, possible_zeros, step_by_step, last_zero=None)
+
+                    # Display complete factorization
+                    display_complete_factorization(original_poly_str, all_zeros)
+                else:
+                    print("\nFactoring stopped at first zero.")
+                    print(f"Quotient remaining: {display_polynomial(quotient_result, show_zeros=False)}")
+                    print(f"\nTo continue, run the program again with the quotient polynomial.")
+
+            else:
+                # No zeros found
+                print("\n" + "=" * 70)
+                print("NO RATIONAL ZEROS FOUND")
+                print("=" * 70)
+                print("\nNone of the possible rational zeros are actual zeros!")
+                print("\nThis means the polynomial either:")
+                print("  • Has only irrational zeros (like √2, √3, etc.)")
+                print("  • Has only complex zeros (involving i)")
+                print("  • Cannot be factored using rational numbers")
+                print("\nYou may need to use:")
+                print("  • Quadratic formula (if degree 2)")
+                print("  • Numerical methods")
+                print("  • Graphing to approximate zeros")
 
     except ValueError as e:
         print(f"\nError parsing polynomial: {e}")
