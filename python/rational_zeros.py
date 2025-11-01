@@ -810,6 +810,8 @@ def display_complete_factorization(original_poly, all_zeros, degree=None, possib
     # Build factored form
     factors = []
     zeros_display = []
+    has_irrational = False
+    has_complex = False
 
     for zero_info in all_zeros:
         if len(zero_info) == 2:
@@ -819,10 +821,37 @@ def display_complete_factorization(original_poly, all_zeros, degree=None, possib
             zero, mult, zero_type = zero_info
 
         # Build factor string
-        if zero_type in ["real", "complex"]:
-            # Irrational or complex - already a string
-            zeros_display.append(f"  x = {zero} ({zero_type})")
-            # Can't easily show in factored form
+        if zero_type == "real":
+            # Irrational real zero - calculate approximate decimal
+            has_irrational = True
+            # Parse the string to get approximate value
+            import re
+            import math
+
+            # Try to extract the numeric value for approximation
+            try:
+                # Handle format like "(-5 + √333) / 2"
+                if '√' in zero:
+                    # Extract the parts
+                    match = re.search(r'\(([+-]?\d+)\s*([+-])\s*√(\d+)\)\s*/\s*(\d+)', zero)
+                    if match:
+                        const = int(match.group(1))
+                        sign = 1 if match.group(2) == '+' else -1
+                        sqrt_val = int(match.group(3))
+                        denom = int(match.group(4))
+                        approx = (const + sign * math.sqrt(sqrt_val)) / denom
+                        zeros_display.append(f"  x = {zero}  ≈ {approx:.4f} (irrational)")
+                    else:
+                        zeros_display.append(f"  x = {zero} (irrational)")
+                else:
+                    zeros_display.append(f"  x = {zero} (irrational)")
+            except:
+                zeros_display.append(f"  x = {zero} (irrational)")
+            continue
+        elif zero_type == "complex":
+            # Complex zero
+            has_complex = True
+            zeros_display.append(f"  x = {zero} (complex)")
             continue
         else:
             # Rational zero
@@ -845,7 +874,15 @@ def display_complete_factorization(original_poly, all_zeros, degree=None, possib
     # Display factored form
     if factors:
         factored_form = " × ".join(factors)
+        if has_irrational or has_complex:
+            if has_irrational:
+                factored_form += " × (irrational quadratic factor)"
+            if has_complex:
+                factored_form += " × (complex quadratic factor)"
         print(f"\nFactored form: {factored_form}")
+    elif has_irrational or has_complex:
+        print(f"\nFactored form: Product of irrational/complex factors")
+        print(f"  (Cannot be expressed as simple rational factors)")
 
     # Display all zeros
     print(f"\nAll zeros found:")
