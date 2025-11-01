@@ -569,6 +569,268 @@ def display_synthetic_division_quick(coefficients, candidate, quotient, remainde
         print(f"\n✗ x = {candidate} is NOT a zero (remainder ≠ 0)")
 
 
+def solve_linear(coefficients):
+    """
+    Solves a linear equation ax + b = 0.
+
+    Args:
+        coefficients (list): [a, b] where equation is ax + b = 0
+
+    Returns:
+        Fraction: The solution x = -b/a
+    """
+    a = Fraction(coefficients[0])
+    b = Fraction(coefficients[1])
+
+    # ax + b = 0
+    # ax = -b
+    # x = -b/a
+    return -b / a
+
+
+def quadratic_formula(coefficients):
+    """
+    Solves a quadratic equation ax² + bx + c = 0 using the quadratic formula.
+
+    Args:
+        coefficients (list): [a, b, c] where equation is ax² + bx + c = 0
+
+    Returns:
+        list: Solutions (may be real or complex)
+    """
+    a = Fraction(coefficients[0])
+    b = Fraction(coefficients[1])
+    c = Fraction(coefficients[2])
+
+    # Calculate discriminant: b² - 4ac
+    discriminant = b*b - 4*a*c
+
+    print(f"\nUsing Quadratic Formula: x = (-b ± √(b² - 4ac)) / 2a")
+    print(f"  a = {a}, b = {b}, c = {c}")
+    print(f"  Discriminant (b² - 4ac) = {discriminant}")
+
+    if discriminant > 0:
+        # Two real solutions
+        import math
+        sqrt_disc = math.sqrt(float(discriminant))
+
+        # Try to express as exact fraction if possible
+        x1 = (-b + Fraction(sqrt_disc).limit_denominator()) / (2*a)
+        x2 = (-b - Fraction(sqrt_disc).limit_denominator()) / (2*a)
+
+        print(f"  Two real solutions (irrational)")
+        return [f"({-b} + √{discriminant}) / {2*a}", f"({-b} - √{discriminant}) / {2*a}"], "real"
+
+    elif discriminant == 0:
+        # One real solution (repeated)
+        x = -b / (2*a)
+        print(f"  One repeated real solution")
+        return [x], "rational"
+
+    else:
+        # Two complex solutions
+        import math
+        real_part = -b / (2*a)
+        imag_part_squared = -discriminant
+
+        # Simplify the imaginary part if possible
+        sqrt_imag = math.sqrt(float(imag_part_squared))
+        denominator = 2 * a
+
+        # Try to simplify the fraction
+        sqrt_frac = Fraction(sqrt_imag).limit_denominator() / denominator
+
+        print(f"  Two complex solutions")
+
+        # Format nicely
+        if real_part == 0:
+            if sqrt_frac == 1:
+                return ["i", "-i"], "complex"
+            else:
+                return [f"{sqrt_frac}i", f"-{sqrt_frac}i"], "complex"
+        else:
+            if sqrt_frac == 1:
+                return [f"{real_part} + i", f"{real_part} - i"], "complex"
+            else:
+                return [f"{real_part} + {sqrt_frac}i", f"{real_part} - {sqrt_frac}i"], "complex"
+
+
+def find_all_zeros_recursive(coefficients, possible_zeros, step_by_step=False, last_zero=None):
+    """
+    Recursively finds all rational zeros of a polynomial.
+
+    Args:
+        coefficients (list): Current polynomial coefficients
+        possible_zeros (list): List of possible rational zeros (from ORIGINAL polynomial)
+        step_by_step (bool): Whether to show step-by-step synthetic division
+        last_zero (Fraction): The last zero found (to test first for multiplicity)
+
+    Returns:
+        list: All zeros found (as tuples of (zero, multiplicity))
+    """
+    degree = len(coefficients) - 1
+    zeros_found = []
+
+    print(f"\n{'─' * 70}")
+    print(f"Current polynomial degree: {degree}")
+    print(f"Coefficients: {[str(c) if isinstance(c, Fraction) else c for c in coefficients]}")
+    print(f"Polynomial: {display_polynomial(coefficients, show_zeros=False)}")
+    print(f"{'─' * 70}")
+
+    # Base cases
+    if degree == 1:
+        # Linear: solve directly
+        zero = solve_linear(coefficients)
+        print(f"\n✓ Linear equation: {coefficients[0]}x + {coefficients[1]} = 0")
+        print(f"  Solution: x = {zero}")
+        return [(zero, 1)]
+
+    elif degree == 2:
+        # Quadratic: try rational zeros first, then quadratic formula
+        print(f"\nQuadratic polynomial detected. Testing rational zeros first...")
+
+        # Reorder to test last_zero first if it exists
+        test_order = possible_zeros.copy()
+        if last_zero and last_zero in test_order:
+            test_order.remove(last_zero)
+            test_order.insert(0, last_zero)
+
+        # Try to find rational zero
+        for candidate in test_order:
+            quotient, remainder = synthetic_division(coefficients, candidate)
+
+            if remainder == 0:
+                print(f"\n✓ Found rational zero: x = {candidate}")
+
+                # Solve the linear quotient
+                final_zero = solve_linear(quotient)
+                print(f"✓ Remaining linear factor gives: x = {final_zero}")
+
+                return [(candidate, 1), (final_zero, 1)]
+
+        # No rational zeros, use quadratic formula
+        print(f"\nNo rational zeros found for quadratic. Using quadratic formula...")
+        solutions, solution_type = quadratic_formula(coefficients)
+
+        if solution_type == "rational":
+            return [(solutions[0], 2)]  # Repeated root
+        else:
+            # Irrational or complex - return as strings
+            return [(solutions[0], 1, solution_type), (solutions[1], 1, solution_type)]
+
+    # Degree >= 3: find rational zeros
+    print(f"\nTesting candidates from original possible zeros list...")
+
+    # Reorder to test last_zero first if it exists
+    test_order = possible_zeros.copy()
+    if last_zero and last_zero in test_order:
+        test_order.remove(last_zero)
+        test_order.insert(0, last_zero)
+        print(f"Testing x = {last_zero} first (checking for multiplicity)...")
+
+    # Test each candidate
+    for candidate in test_order:
+        if step_by_step:
+            quotient, remainder = display_synthetic_division_interactive(coefficients, candidate)
+        else:
+            quotient, remainder = synthetic_division(coefficients, candidate)
+            display_synthetic_division_quick(coefficients, candidate, quotient, remainder)
+
+        if remainder == 0:
+            # Found a zero!
+            print(f"\n{'═' * 70}")
+            print(f"✓ ZERO FOUND: x = {candidate}")
+            print(f"{'═' * 70}")
+
+            # Recursively find remaining zeros
+            remaining_zeros = find_all_zeros_recursive(quotient, possible_zeros, step_by_step, candidate)
+
+            # Combine results - check if this zero repeats
+            combined = [(candidate, 1)]
+            for zero, mult, *extra in remaining_zeros:
+                if zero == candidate:
+                    # Same zero found again - increase multiplicity
+                    combined[0] = (candidate, combined[0][1] + mult)
+                else:
+                    combined.append((zero, mult, *extra))
+
+            return combined
+
+    # No rational zeros found
+    print(f"\n{'═' * 70}")
+    print("NO MORE RATIONAL ZEROS FOUND")
+    print(f"{'═' * 70}")
+    print("\nRemaining polynomial cannot be factored using rational numbers.")
+    print("You may need to use:")
+    print("  • Numerical methods")
+    print("  • Graphing")
+    print("  • Advanced factoring techniques")
+
+    return []
+
+
+def display_complete_factorization(original_poly, all_zeros):
+    """
+    Displays the complete factorization with all zeros found.
+
+    Args:
+        original_poly (str): Original polynomial string
+        all_zeros (list): List of (zero, multiplicity) or (zero, multiplicity, type) tuples
+    """
+    print("\n" + "=" * 70)
+    print("COMPLETE FACTORIZATION")
+    print("=" * 70)
+
+    print(f"\nOriginal polynomial: {original_poly}")
+
+    # Build factored form
+    factors = []
+    zeros_display = []
+
+    for zero_info in all_zeros:
+        if len(zero_info) == 2:
+            zero, mult = zero_info
+            zero_type = "rational"
+        else:
+            zero, mult, zero_type = zero_info
+
+        # Build factor string
+        if zero_type in ["real", "complex"]:
+            # Irrational or complex - already a string
+            zeros_display.append(f"  x = {zero} ({zero_type})")
+            # Can't easily show in factored form
+            continue
+        else:
+            # Rational zero
+            if zero >= 0:
+                factor = f"(x - {zero})"
+            else:
+                factor = f"(x + {abs(zero)})"
+
+            if mult > 1:
+                factor += f"^{mult}"
+
+            factors.append(factor)
+
+            # Display zero with multiplicity
+            if mult > 1:
+                zeros_display.append(f"  x = {zero} (multiplicity: {mult})")
+            else:
+                zeros_display.append(f"  x = {zero}")
+
+    # Display factored form
+    if factors:
+        factored_form = " × ".join(factors)
+        print(f"\nFactored form: {factored_form}")
+
+    # Display all zeros
+    print(f"\nAll zeros found:")
+    for zero_str in zeros_display:
+        print(zero_str)
+
+    print(f"\nTotal zeros: {sum(z[1] for z in all_zeros if len(z) >= 2)}")
+
+
 def display_factored_form(original_poly, zero_found, quotient_coeffs):
     """
     Displays the factored form after finding a zero.
@@ -579,7 +841,7 @@ def display_factored_form(original_poly, zero_found, quotient_coeffs):
         quotient_coeffs (list): Quotient coefficients after division
     """
     print("\n" + "=" * 70)
-    print("FACTORED FORM")
+    print("FIRST ZERO FOUND - PARTIAL FACTORIZATION")
     print("=" * 70)
 
     # Create the factor (x - zero)
@@ -600,8 +862,8 @@ def display_factored_form(original_poly, zero_found, quotient_coeffs):
         quotient_display = quotient_poly
 
     print(f"\nOriginal polynomial: {original_poly}")
-    print(f"\nFactored form: {factor} × {quotient_display}")
-    print(f"\nZero found: x = {zero_found}")
+    print(f"\nPartial factorization: {factor} × {quotient_display}")
+    print(f"\nFirst zero: x = {zero_found}")
     print(f"Quotient polynomial: {quotient_poly}")
     print(f"Quotient degree: {len(quotient_coeffs) - 1}")
 
@@ -791,39 +1053,40 @@ def main():
                     break
             print()
 
-        # Display results
+        # Display results of first zero
         if zero_found is not None:
-            # Show the factored form
+            # Show the first zero found
             original_poly_str = display_polynomial(coefficients, show_zeros=False)
             display_factored_form(original_poly_str, zero_found, quotient_result)
 
-            # Prompt for further factoring
+            # Ask if user wants to find ALL zeros
             print("\n" + "=" * 70)
-            print("NEXT STEP: FACTOR THE QUOTIENT")
+            print("CONTINUE FACTORING TO FIND ALL ZEROS?")
             print("=" * 70)
 
-            print("\nThe quotient polynomial can be factored further to find more zeros.")
-            print("\nOptions:")
-            print("  1. Run this program again with the quotient polynomial")
-            print("  2. Use the quadratic formula (if quotient is degree 2)")
-            print("  3. Continue factoring manually")
+            print("\nWe found the first zero. We can now:")
+            print("  1. Find ALL remaining zeros automatically (recommended)")
+            print("  2. Stop here")
 
-            further = input("\nWould you like to factor the quotient now? (y/n): ").strip().lower()
+            continue_all = input("\nFind all zeros automatically? (y/n): ").strip().lower()
 
-            if further == 'y':
-                # Convert quotient coefficients back to polynomial string for recursion
-                quotient_poly_str = display_polynomial(quotient_result, show_zeros=False)
-                print(f"\n{'=' * 70}")
-                print(f"ANALYZING QUOTIENT: {quotient_poly_str}")
-                print(f"{'=' * 70}\n")
+            if continue_all == 'y':
+                # Use recursive function to find ALL zeros
+                print("\n" + "=" * 70)
+                print("FINDING ALL ZEROS")
+                print("=" * 70)
 
-                # Recursively analyze the quotient
-                # Note: We'll need to parse it again, but we already have coefficients
-                print("(Feature coming soon: Automatic quotient factoring)")
-                print(f"\nFor now, run the program again with input: {quotient_poly_str}")
+                # Start fresh with full recursive search
+                # Convert coefficients to integers for clean display
+                int_coeffs = [int(c) for c in coefficients]
+                all_zeros = find_all_zeros_recursive(int_coeffs, possible_zeros, step_by_step, last_zero=None)
+
+                # Display complete factorization
+                display_complete_factorization(original_poly_str, all_zeros)
             else:
-                print("\nFactoring complete for now!")
-                print(f"Remember: The quotient is {display_polynomial(quotient_result, show_zeros=False)}")
+                print("\nFactoring stopped at first zero.")
+                print(f"Quotient remaining: {display_polynomial(quotient_result, show_zeros=False)}")
+                print(f"\nTo continue, run the program again with the quotient polynomial.")
 
         else:
             # No zeros found
