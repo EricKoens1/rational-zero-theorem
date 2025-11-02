@@ -644,17 +644,63 @@ def quadratic_formula(coefficients, verbose=True):
         print(f"  Discriminant (b² - 4ac) = {discriminant}")
 
     if discriminant > 0:
-        # Two real solutions
+        # Two real solutions (irrational)
         import math
-        sqrt_disc = math.sqrt(float(discriminant))
-
-        # Try to express as exact fraction if possible
-        x1 = (-b + Fraction(sqrt_disc).limit_denominator()) / (2*a)
-        x2 = (-b - Fraction(sqrt_disc).limit_denominator()) / (2*a)
+        from math import gcd
 
         if verbose:
             print(f"  Two real solutions (irrational)")
-        return [f"({-b} + √{discriminant}) / {2*a}", f"({-b} - √{discriminant}) / {2*a}"], "real"
+
+        # Simplify the radical first
+        radical_coef, radical_remaining = simplify_radical(int(discriminant))
+
+        # Now we have: (-b ± (radical_coef)√(radical_remaining)) / (2a)
+        # Find GCD to simplify
+        g = gcd(gcd(abs(int(-b)), radical_coef), int(2*a))
+
+        real_part = int(-b) // g
+        sqrt_coef = radical_coef // g
+        denom = int(2*a) // g
+
+        # Format the output
+        if denom == 1:
+            # No denominator
+            if sqrt_coef == 1:
+                if radical_remaining == 1:
+                    # Fully simplified to integers
+                    return [str(real_part + 1), str(real_part - 1)], "rational"
+                else:
+                    if real_part == 0:
+                        return [f"√{radical_remaining}", f"-√{radical_remaining}"], "real"
+                    else:
+                        return [f"{real_part} + √{radical_remaining}", f"{real_part} - √{radical_remaining}"], "real"
+            else:
+                if radical_remaining == 1:
+                    return [f"{real_part + sqrt_coef}", f"{real_part - sqrt_coef}"], "rational"
+                else:
+                    if real_part == 0:
+                        return [f"{sqrt_coef}√{radical_remaining}", f"-{sqrt_coef}√{radical_remaining}"], "real"
+                    else:
+                        return [f"{real_part} + {sqrt_coef}√{radical_remaining}", f"{real_part} - {sqrt_coef}√{radical_remaining}"], "real"
+        else:
+            # Has denominator
+            if sqrt_coef == 1:
+                if radical_remaining == 1:
+                    # Can fully simplify to fractions
+                    return [f"{real_part + 1}/{denom}", f"{real_part - 1}/{denom}"], "rational"
+                else:
+                    if real_part == 0:
+                        return [f"√{radical_remaining} / {denom}", f"-√{radical_remaining} / {denom}"], "real"
+                    else:
+                        return [f"({real_part} + √{radical_remaining}) / {denom}", f"({real_part} - √{radical_remaining}) / {denom}"], "real"
+            else:
+                if radical_remaining == 1:
+                    return [f"{real_part + sqrt_coef}/{denom}", f"{real_part - sqrt_coef}/{denom}"], "rational"
+                else:
+                    if real_part == 0:
+                        return [f"{sqrt_coef}√{radical_remaining} / {denom}", f"-{sqrt_coef}√{radical_remaining} / {denom}"], "real"
+                    else:
+                        return [f"({real_part} + {sqrt_coef}√{radical_remaining}) / {denom}", f"({real_part} - {sqrt_coef}√{radical_remaining}) / {denom}"], "real"
 
     elif discriminant == 0:
         # One real solution (repeated)
@@ -970,19 +1016,35 @@ def display_complete_factorization(original_poly, all_zeros, degree=None, possib
 
             # Try to extract the numeric value for approximation
             try:
-                # Handle format like "(-5 + √333) / 2"
                 if '√' in zero:
-                    # Extract the parts
-                    match = re.search(r'\(([+-]?\d+)\s*([+-])\s*√(\d+)\)\s*/\s*(\d+)', zero)
+                    # Handle different formats:
+                    # Format 1: "(-5 + √333) / 2"
+                    # Format 2: "(-5 + 3√37) / 2" (with coefficient)
+                    # Format 3: "-1 + √5" (no denominator)
+                    # Format 4: "-1 + 2√5" (coefficient, no denom)
+
+                    # Try format with parentheses and denominator: (a + b√c) / d
+                    match = re.search(r'\(([+-]?\d+)\s*([+-])\s*(\d*)√(\d+)\)\s*/\s*(\d+)', zero)
                     if match:
                         const = int(match.group(1))
                         sign = 1 if match.group(2) == '+' else -1
-                        sqrt_val = int(match.group(3))
-                        denom = int(match.group(4))
-                        approx = (const + sign * math.sqrt(sqrt_val)) / denom
+                        sqrt_coef = int(match.group(3)) if match.group(3) else 1
+                        sqrt_val = int(match.group(4))
+                        denom = int(match.group(5))
+                        approx = (const + sign * sqrt_coef * math.sqrt(sqrt_val)) / denom
                         zeros_display.append(f"  x = {zero}  ≈ {approx:.4f} (irrational)")
                     else:
-                        zeros_display.append(f"  x = {zero} (irrational)")
+                        # Try format without parentheses: a + b√c
+                        match2 = re.search(r'([+-]?\d+)\s*([+-])\s*(\d*)√(\d+)', zero)
+                        if match2:
+                            const = int(match2.group(1))
+                            sign = 1 if match2.group(2) == '+' else -1
+                            sqrt_coef = int(match2.group(3)) if match2.group(3) else 1
+                            sqrt_val = int(match2.group(4))
+                            approx = const + sign * sqrt_coef * math.sqrt(sqrt_val)
+                            zeros_display.append(f"  x = {zero}  ≈ {approx:.4f} (irrational)")
+                        else:
+                            zeros_display.append(f"  x = {zero} (irrational)")
                 else:
                     zeros_display.append(f"  x = {zero} (irrational)")
             except:
